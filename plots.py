@@ -50,7 +50,6 @@ def plot_appendix(df_array,
     return plt
 
 
-
 def plot_main_paper(df_array,
                 label_list,
                 true_mr_list,

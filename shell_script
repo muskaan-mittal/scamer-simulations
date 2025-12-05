@@ -1,0 +1,4 @@
+for file in *.ipynb; do
+newname=$(echo file)
+mv $file $newname
+done
