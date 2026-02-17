@@ -38,6 +38,41 @@ def cmre_ds(X, outcome, covariates, TM_data, MA_data):
         
     return mr
 
+# also returns delta_star (TM_ce_0)
+def cmre_ds_2(X, outcome, covariates, TM_data, MA_data):
+    # X = treatment (in Medicare example, this is the reported value of employement)
+
+    # Variables used by main model to predict anchor
+    v = copy.deepcopy(covariates)
+    v.append(X)
+    
+    train_MA_data, test_MA_data = train_test_split(MA_data, test_size=0.2, random_state=42)
+
+    # Split the MA dataset and the normal dataset
+    train_MA_data_0 = train_MA_data[train_MA_data[X] == 0] # clean MA dataset
+    train_TM_data_1 = TM_data[TM_data[X] == 1]  # clean TM dataset
+
+    test_MA_data_1 = test_MA_data[test_MA_data[X] == 1]
+    test_MA_data_0 = test_MA_data[test_MA_data[X] == 0]
+
+    # Train the models using the train split
+    clean_MA_predictor = XGBRegressor().fit(train_MA_data_0[covariates], train_MA_data_0[outcome])
+    clean_TM_predictor = XGBRegressor().fit(train_TM_data_1[covariates], train_TM_data_1[outcome])
+    all_MA_predictor = XGBRegressor().fit(train_MA_data[v], train_MA_data[outcome])
+
+    # Estimate the CATEs
+    MA_ce_1 = all_MA_predictor.predict(test_MA_data_1[covariates].assign(**{X: 1})[v]) \
+                - all_MA_predictor.predict(test_MA_data_1[covariates].assign(**{X: 0})[v])    # T_a
+    TM_ce_1 = clean_TM_predictor.predict(test_MA_data_1[covariates]) \
+                - clean_MA_predictor.predict(test_MA_data_1[covariates]) # T'_a
+    TM_ce_0 = clean_TM_predictor.predict(test_MA_data_0[covariates]) \
+                - clean_MA_predictor.predict(test_MA_data_0[covariates]) # delta'_a
+    
+    # Estimate the misreporting rate
+    mr = (np.mean(TM_ce_1) - np.mean(MA_ce_1)) / np.mean(TM_ce_0)
+        
+    return (mr, np.mean(TM_ce_0))
+
 def cmre_ds_adjusted_for_U(X, outcome, covariates, TM_data, MA_data, U):
     # X = treatment (in Medicare example, this is the reported value of employement)
     # Y = outcome
