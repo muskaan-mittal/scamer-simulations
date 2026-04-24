@@ -81,3 +81,14 @@ def ocsvm(normal_dataset, strategic_dataset):
     pred = clf.predict(strategic_dataset)
     mr = (np.sum(pred == -1) / len(strategic_dataset))
     return mr
+
+def ocsvm_medicare(normal_dataset, strategic_dataset):
+    normal_dataset = normal_dataset.drop(columns='AGENT')
+    normal_dataset = normal_dataset[normal_dataset['HCC'] == 1]
+    strategic_dataset = strategic_dataset.drop(columns='AGENT')
+    strategic_dataset = strategic_dataset[strategic_dataset['HCC'] == 1]
+    clf = OneClassSVM(nu=0.01, kernel="rbf", gamma=0.1)
+    clf.fit(normal_dataset)
+    pred = clf.predict(strategic_dataset)
+    mr = (np.sum(pred == -1) / len(strategic_dataset))
+    return mr
